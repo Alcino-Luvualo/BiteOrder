@@ -1,18 +1,30 @@
+import { useState } from "react";
 import "../styles/home.css";
 
 function Home(){
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    const toggleMenu = () => {
+        setMenuOpen(!menuOpen);
+    };
+
     return (
         <div className="home">
             <header className="header">
                 <div className="logo">
                     <h1>BiteOrder</h1>
                 </div>
-                <nav className="nav">
+                <div className="menu-toggle" onClick={toggleMenu}>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <nav className={`nav ${menuOpen ? 'active' : ''}`}>
                     <ul>        
-                        <li><a href="/">Inicio</a></li>
-                        <li><a href="/contactos">Contactos</a></li>
-                        <li><a href="/sobre">Sobre</a></li>
-                        <li><a href="/login" className="signup-btn">Login</a></li>
+                        <li><a href="/" onClick={() => setMenuOpen(false)}>Inicio</a></li>
+                        <li><a href="/contactos" onClick={() => setMenuOpen(false)}>Contactos</a></li>
+                        <li><a href="/sobre" onClick={() => setMenuOpen(false)}>Sobre</a></li>
+                        
                     </ul>
                 </nav>
             </header>
@@ -21,7 +33,10 @@ function Home(){
                 <div className="hero-section">
                     <h2 className="hero-title">Peça, Organize e Monitore Seus Pedidos</h2>
                     <p className="hero-subtitle">Satisfaça os seus clientes com serviço de monitorização de pedidos e entrega rápida.</p>
-                    <button className="iniciar-btn"><a href="/">Começar</a></button>
+                    <div className="hero-buttons">
+                        <a href="/login" className="iniciar-btn">Login</a>
+                        <a href="/register" className="register-hero-btn">Criar Conta</a>
+                    </div>
                 </div>
                 <div className="app-mockups">
                     <div className="phone-mockup phone-left">

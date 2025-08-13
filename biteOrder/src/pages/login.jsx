@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase/config';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../styles/login.css';
 
 function Login() {
@@ -104,7 +104,7 @@ function Login() {
                 </button>
 
                 <div className="login-footer">
-                    <p>Não tem uma conta? <a href="/">Voltar ao início</a></p>
+                    <p>Não tem uma conta? <Link to="/register">Criar conta</Link></p>
                 </div>
             </div>
         </div>

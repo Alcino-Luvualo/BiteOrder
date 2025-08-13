@@ -10,6 +10,11 @@ function Contactos() {
     });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    const toggleMenu = () => {
+        setMenuOpen(!menuOpen);
+    };
 
     const handleChange = (e) => {
         setFormData({
@@ -41,12 +46,17 @@ function Contactos() {
                 <div className="logo">
                     <h1>BiteOrder</h1>
                 </div>
-                <nav className="nav">
+                <div className="menu-toggle" onClick={toggleMenu}>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <nav className={`nav ${menuOpen ? 'active' : ''}`}>
                     <ul>
-                        <li><a href="/">Inicio</a></li>
-                        <li><a href="/contactos">Contactos</a></li>
-                        <li><a href="/sobre">Sobre</a></li>
-                        <li><a href="/login" className="login-link">Login</a></li>
+                        <li><a href="/" onClick={() => setMenuOpen(false)}>Inicio</a></li>
+                        <li><a href="/contactos" onClick={() => setMenuOpen(false)}>Contactos</a></li>
+                        <li><a href="/sobre" onClick={() => setMenuOpen(false)}>Sobre</a></li>
+                        <li><a href="/login" className="login-link" onClick={() => setMenuOpen(false)}>Login</a></li>
                     </ul>
                 </nav>
             </header>

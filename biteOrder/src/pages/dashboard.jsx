@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { collection, addDoc, onSnapshot, updateDoc, doc, query, orderBy } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+
 import '../styles/dashboard.css';
 
 function Dashboard() {
@@ -12,6 +13,8 @@ function Dashboard() {
     const [prato, setPrato] = useState('');
     const [tipo, setTipo] = useState('comum');
     const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
     const navigate = useNavigate();
 
     // Contadores
@@ -22,20 +25,34 @@ function Dashboard() {
 
     useEffect(() => {
         // Verificar se o usuário está autenticado
-        const unsubscribe = auth.onAuthStateChanged((user) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (!user) {
                 navigate('/login');
+            } else {
+                setUser(user);
             }
+            setAuthLoading(false);
         });
 
         // Escutar mudanças nos pedidos em tempo real
-        const q = query(collection(db, 'pedidos'), orderBy('timestamp', 'desc'));
+        const q = query(collection(db, 'pedidos'), orderBy('timestamp', 'asc'));
         const unsubscribePedidos = onSnapshot(q, (snapshot) => {
             const pedidosData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             setPedidos(pedidosData);
+        }, (error) => {
+            console.error('Erro ao carregar pedidos:', error);
+            // Se houver erro, tentar carregar sem orderBy
+            const simpleQuery = collection(db, 'pedidos');
+            onSnapshot(simpleQuery, (snapshot) => {
+                const pedidosData = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setPedidos(pedidosData);
+            });
         });
 
         return () => {
@@ -64,7 +81,8 @@ function Dashboard() {
                 prato: prato,
                 prioridade: tipo,
                 status: 'pendente',
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                userId: user?.uid || 'anonymous'
             };
 
             await addDoc(collection(db, 'pedidos'), novoPedido);
@@ -78,6 +96,7 @@ function Dashboard() {
             setTipo('comum');
         } catch (error) {
             console.error('Erro ao adicionar pedido:', error);
+            alert('Erro ao adicionar pedido: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -98,8 +117,24 @@ function Dashboard() {
         audio.play().catch(e => console.log('Erro ao tocar som:', e));
     };
 
-    const pedidosComunsList = pedidos.filter(p => p.prioridade === 'comum' && p.status !== 'servido');
-    const pedidosExpressosList = pedidos.filter(p => p.prioridade === 'expresso' && p.status !== 'servido');
+    // FIFO: Primeiro a chegar, primeiro a ser servido (mais antigos por cima)
+    const pedidosComunsList = pedidos
+        .filter(p => p.prioridade === 'comum' && p.status !== 'servido')
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    // LIFO: Último a chegar, primeiro a ser servido (mais recentes por cima)
+    const pedidosExpressosList = pedidos
+        .filter(p => p.prioridade === 'expresso' && p.status !== 'servido')
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    if (authLoading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>A carregar...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="dashboard">
@@ -107,6 +142,13 @@ function Dashboard() {
             <header className="dashboard-header">
                 <div className="header-left">
                     <h1>BiteOrder</h1>
+                    {user && (
+                        <div className="user-info">
+                            <span className="user-name">
+                                Olá, {user.displayName || user.email?.split('@')[0] || 'Usuário'}
+                            </span>
+                        </div>
+                    )}
                     <div className="counters">
                         <span className="counter-item">
                             <strong>{pedidosPendentes}</strong> Pendentes
@@ -120,6 +162,8 @@ function Dashboard() {
                     Sair
                 </button>
             </header>
+
+
 
             {/* Formulário de Pedido */}
             <div className="order-form-container">
@@ -168,11 +212,14 @@ function Dashboard() {
 
             {/* Listas de Pedidos */}
             <div className="orders-container">
-                {/* Pedidos Comuns (FIFO) */}
+                {/* Pedidos Comuns (FIFO) - Primeiro a chegar, primeiro a ser servido */}
                 <div className="orders-column fifo-column">
                     <div className="column-header">
                         <h2>Pedidos Comuns (FIFO)</h2>
                         <span className="order-count">{pedidosComuns}</span>
+                    </div>
+                    <div className="column-description">
+                        <small>Mais antigos por cima → Primeiro a ser servido</small>
                     </div>
                     <div className="orders-list">
                         <AnimatePresence>
@@ -215,11 +262,14 @@ function Dashboard() {
                     </div>
                 </div>
 
-                {/* Pedidos Expressos (LIFO) */}
+                {/* Pedidos Expressos (LIFO) - Último a chegar, primeiro a ser servido */}
                 <div className="orders-column lifo-column">
                     <div className="column-header">
                         <h2>Pedidos Expressos (LIFO)</h2>
                         <span className="order-count">{pedidosExpressos}</span>
+                    </div>
+                    <div className="column-description">
+                        <small>Mais recentes por cima → Prioridade máxima</small>
                     </div>
                     <div className="orders-list">
                         <AnimatePresence>
