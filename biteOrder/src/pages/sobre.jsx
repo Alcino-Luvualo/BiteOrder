@@ -108,7 +108,7 @@ function Sobre() {
 
             <footer className="sobre-footer">
                 <div className="container">
-                    <p>&copy; 2024 BiteOrder. Todos os direitos reservados.</p>
+                    <p>&copy; 2025 BiteOrder. Todos os direitos reservados.</p>
                 </div>
             </footer>
         </div>
